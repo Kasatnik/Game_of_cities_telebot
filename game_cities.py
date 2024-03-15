@@ -4,17 +4,26 @@ import telebot as tel
 import os
 import pyautogui
 import cv2
-from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
+import geonamescache
 
-token = ""
+gc = geonamescache.GeonamesCache()
+cities = gc.get_cities()
+
+token = "6630004707:AAGbviWPwvbAl7oaAKD9WCOV-SdCG4oWjNE"
 bot = tel.TeleBot(token)
-creator =
+creator = 6735254429
 dict_id = {}
 
 
-@bot.message_handler(commands=["start"])
+@bot.message_handler(commands=["start_game"])
 def start(message):
-    pass
+    bot.send_message(message.from_user.id, "Напиши название города")
+
+
+@bot.message_handler(content_types=["text"])
+def user_message(message):
+    user_city = message.text
+    print(gc.search_cities(user_city, case_sensitive=True, contains_search=True))
 
 
 def open_file_r(file_path):

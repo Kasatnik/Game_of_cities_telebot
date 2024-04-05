@@ -1,7 +1,6 @@
 import requests
 
 
-
 def result(lat, long):
     token = "b161e3a8-4f95-4c85-9d6e-ed22f24504b7"
     latitude = lat
@@ -10,7 +9,7 @@ def result(lat, long):
 
     answer = requests.get(numbers)
     data = answer.json()
-    print(data)
+    print(11111111, data)
     return data
 
 

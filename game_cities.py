@@ -1,10 +1,12 @@
 import random
 import json
+import time
+
 import telebot as tel
 import os
 import pyautogui
 import geonamescache
-
+import sqlite3
 from AQI import result
 
 gc = geonamescache.GeonamesCache()
@@ -21,6 +23,16 @@ written_user_cities = []
 def start(message):
     bot.send_message(message.from_user.id,
                      "Привет, это игра в города напиши название города. Но писать название надо с большой буквы!")
+    with sqlite3.connect("Table.db") as db:
+        c = db.cursor()
+        c.execute("""CREATE TABLE IF NOT EXISTS users_table (
+            ID INTEGER NOT NULL,
+            Username TEXT,
+            Surname_Name TEXT,
+            points INTEGER
+        )""")
+        c.execute("INSERT INTO users_table VALUES (35131321321, 'Roma', 'Kdcdv', 0)")
+        db.commit()
 
 
 @bot.message_handler(content_types=["text"])
@@ -28,16 +40,12 @@ def user_message(message):
     user_city = message.text
     l = gc.search_cities(user_city, case_sensitive=True, contains_search=True)
     if len(written_user_cities) > 0:
-        latest_bot_letter = (written_user_cities[-1][-1])
+        latest_bot_letter = (written_user_cities[-1][-1].upper())
         if latest_bot_letter in ["ь", "ъ", "ы"]:
             latest_bot_letter = written_user_cities[-1][-2].upper()
         if latest_bot_letter != user_city[0]:
             bot.send_message(message.from_user.id, "Ты написал не на ту букву")
             return
-
-
-
-
 
     if not l:
         bot.send_message(message.from_user.id, "Такого города нет")
@@ -45,18 +53,26 @@ def user_message(message):
     if user_city in written_user_cities:
         bot.send_message(message.from_user.id, "Этот город уже был")
         return
+    user_lat = l[0]["latitude"]
+    user_long = l[0]["longitude"]
+    bot.send_location(message.from_user.id, user_lat, user_long)
+    data = result(user_lat, user_long)
 
+    time.sleep(3)
 
     written_user_cities.append(user_city)
     latest_letter = user_city[-1]
     if latest_letter in ["ь", "ъ", "ы"]:
         latest_letter = user_city[-2]
-    written_bot_cities = searching_cities(latest_letter)
+    written_bot_cities, lat, long = searching_cities(latest_letter)
     written_user_cities.append(written_bot_cities)
 
     bot.send_message(message.from_user.id, f"Я говорю на букву: {latest_letter}")
     bot.send_message(message.from_user.id, written_bot_cities)
+    bot.send_location(message.from_user.id, lat, long)
     print(written_user_cities)
+
+
 def searching_cities(latest_letter):
     latest_letter = latest_letter.upper()
     for v in cities:
@@ -66,7 +82,7 @@ def searching_cities(latest_letter):
                 if h in written_user_cities:
                     break
                 if h[0] == latest_letter:
-                        return h
+                    return h, cities[v]["latitude"], cities[v]["longitude"]
 
 
 @bot.message_handler(content_types=["location"])
@@ -86,7 +102,6 @@ def open_file_w(file_path, data):
 
 
 bot.polling()
-
 
 """
 В этом коде создать таблицу БД для юзеров с такими столбцами: айди_тг, юзернейм, имя_фамилия, поинты

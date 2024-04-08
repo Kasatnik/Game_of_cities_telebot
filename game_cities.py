@@ -8,6 +8,7 @@ import pyautogui
 import geonamescache
 import sqlite3
 from AQI import result
+import wikipedia
 
 gc = geonamescache.GeonamesCache()
 cities = gc.get_cities()
@@ -56,9 +57,9 @@ def user_message(message):
     user_lat = l[0]["latitude"]
     user_long = l[0]["longitude"]
     bot.send_location(message.from_user.id, user_lat, user_long)
-    data = result(user_lat, user_long)
-
-    time.sleep(3)
+    answer = wiki(message, user_city)
+    send_data(message, user_lat, user_long, answer)
+    time.sleep(0)
 
     written_user_cities.append(user_city)
     latest_letter = user_city[-1]
@@ -67,9 +68,10 @@ def user_message(message):
     written_bot_cities, lat, long = searching_cities(latest_letter)
     written_user_cities.append(written_bot_cities)
 
-    bot.send_message(message.from_user.id, f"Я говорю на букву: {latest_letter}")
-    bot.send_message(message.from_user.id, written_bot_cities)
+    bot.send_message(message.from_user.id, f"Я говорю на букву: {latest_letter}\n\n{written_bot_cities}")
     bot.send_location(message.from_user.id, lat, long)
+    answerr = wiki(message, written_bot_cities)
+    send_data(message, lat, long, answerr)
     print(written_user_cities)
 
 
@@ -87,7 +89,27 @@ def searching_cities(latest_letter):
 
 @bot.message_handler(content_types=["location"])
 def user_location(message):
-    result(message.location.latitude, message.location.longitude)
+    send_data(message, message.location.latitude, message.location.longitude)
+
+
+def send_data(message, lat, long, answer):
+    data = result(lat, long)
+    country = data["data"]["country"]
+    tp = data["data"]["current"]["weather"]["tp"]
+    aqius = data["data"]["current"]["pollution"]["aqius"]
+    ws = data["data"]["current"]["weather"]["ws"]
+    bot.send_message(message.from_user.id,
+                     f"Страна: {country},\nТемпература: {tp},\nГрязнота воздуха: {aqius},\nCкорость ветра: {ws}\n\n{answer}")
+
+
+def wiki(message, user_city):
+    wikipedia.set_lang('ru')
+    try:
+        python_page = wikipedia.page(user_city)
+        return python_page.summary
+
+    except wikipedia.exceptions.PageError:
+        return "  "
 
 
 def open_file_r(file_path):

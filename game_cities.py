@@ -9,11 +9,13 @@ import geonamescache
 import sqlite3
 from AQI import result
 import wikipedia
+import requests
 
 gc = geonamescache.GeonamesCache()
 cities = gc.get_cities()
 
 token = "6630004707:AAGbviWPwvbAl7oaAKD9WCOV-SdCG4oWjNE"
+images_api = "bAKzpGjWfG25uqAIVVt-NqfFbokGXxP3-DxQaVcAINk"
 bot = tel.TeleBot(token)
 creator = 6735254429
 dict_id = {}
@@ -59,6 +61,7 @@ def user_message(message):
     bot.send_location(message.from_user.id, user_lat, user_long)
     answer = wiki(message, user_city)
     send_data(message, user_lat, user_long, answer)
+
     time.sleep(0)
 
     written_user_cities.append(user_city)
@@ -94,12 +97,18 @@ def user_location(message):
 
 def send_data(message, lat, long, answer):
     data = result(lat, long)
+    launch_url_img = url_img(user_city=data["data"]["state"])
+    print(11111111, data)
     country = data["data"]["country"]
     tp = data["data"]["current"]["weather"]["tp"]
     aqius = data["data"]["current"]["pollution"]["aqius"]
     ws = data["data"]["current"]["weather"]["ws"]
-    bot.send_message(message.from_user.id,
-                     f"Страна: {country},\nТемпература: {tp},\nГрязнота воздуха: {aqius},\nCкорость ветра: {ws}\n\n{answer}")
+    if launch_url_img is not None:
+        bot.send_photo(message.from_user.id, launch_url_img)
+        bot.send_message(message.from_user.id,f"Страна: {country},\nТемпература: {tp},\nЗагрязнённость воздуха: {aqius},\nCкорость ветра: {ws}\n\n{answer}")
+    else:
+        bot.send_message(message.from_user.id,
+                         f"Страна: {country},\nТемпература: {tp},\nЗагрязнённость воздуха: {aqius},\nCкорость ветра: {ws}\n\n{answer}")
 
 
 def wiki(message, user_city):
@@ -110,6 +119,19 @@ def wiki(message, user_city):
 
     except wikipedia.exceptions.PageError:
         return "  "
+
+def url_img(user_city):
+    url = f"https://api.unsplash.com/search/photos?page=1&query={user_city}&client_id={images_api}"
+    response = requests.get(url)
+    print(response)
+    if response.status_code == 200:
+        json_data = response.json()
+        results = json_data["results"]
+        if results:
+            random_img = random.choice(results)
+            return random_img["urls"]["regular"]
+    return None
+
 
 
 def open_file_r(file_path):
@@ -126,6 +148,8 @@ def open_file_w(file_path, data):
 bot.polling()
 
 """
-В этом коде создать таблицу БД для юзеров с такими столбцами: айди_тг, юзернейм, имя_фамилия, поинты
-Когда человек нажимает на команду "старт", просто записать пользователя в БД (инсерт)
+Созать БД и таблицу в ней с разными полями
+Когда человек нажимает на кнопку "старт" - записать его в БД
+Когда бот засчитывает город, то нужно прибавлять ему очки +1
+
 """

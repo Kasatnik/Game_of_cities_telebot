@@ -1,10 +1,7 @@
 import random
 import json
 import time
-
 import telebot as tel
-import os
-import pyautogui
 import geonamescache
 import sqlite3
 from AQI import result
@@ -34,8 +31,14 @@ def start(message):
             Surname_Name TEXT,
             points INTEGER
         )""")
-        c.execute("INSERT INTO users_table VALUES (35131321321, 'Roma', 'Kdcdv', 0)")
+        c.execute(f"INSERT INTO users_table VALUES ({message.from_user.id}, 'Roma', 'Kdcdv', 0)")
         db.commit()
+
+
+@bot.message_handler(commands=["reset_words"])
+def reset(message):
+    written_user_cities.clear()
+    bot.send_message(message.from_user.id, "Города были сброшены")
 
 
 @bot.message_handler(content_types=["text"])
@@ -105,7 +108,8 @@ def send_data(message, lat, long, answer):
     ws = data["data"]["current"]["weather"]["ws"]
     if launch_url_img is not None:
         bot.send_photo(message.from_user.id, launch_url_img)
-        bot.send_message(message.from_user.id,f"Страна: {country},\nТемпература: {tp},\nЗагрязнённость воздуха: {aqius},\nCкорость ветра: {ws}\n\n{answer}")
+        bot.send_message(message.from_user.id,
+                         f"Страна: {country},\nТемпература: {tp},\nЗагрязнённость воздуха: {aqius},\nCкорость ветра: {ws}\n\n{answer}")
     else:
         bot.send_message(message.from_user.id,
                          f"Страна: {country},\nТемпература: {tp},\nЗагрязнённость воздуха: {aqius},\nCкорость ветра: {ws}\n\n{answer}")
@@ -120,6 +124,7 @@ def wiki(message, user_city):
     except wikipedia.exceptions.PageError:
         return "  "
 
+
 def url_img(user_city):
     url = f"https://api.unsplash.com/search/photos?page=1&query={user_city}&client_id={images_api}"
     response = requests.get(url)
@@ -131,7 +136,6 @@ def url_img(user_city):
             random_img = random.choice(results)
             return random_img["urls"]["regular"]
     return None
-
 
 
 def open_file_r(file_path):
@@ -147,9 +151,3 @@ def open_file_w(file_path, data):
 
 bot.polling()
 
-"""
-Созать БД и таблицу в ней с разными полями
-Когда человек нажимает на кнопку "старт" - записать его в БД
-Когда бот засчитывает город, то нужно прибавлять ему очки +1
-
-"""

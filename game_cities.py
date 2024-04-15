@@ -3,7 +3,6 @@ import json
 import time
 import telebot as tel
 import geonamescache
-import sqlite3
 from AQI import result
 import wikipedia
 import requests
@@ -23,16 +22,6 @@ written_user_cities = []
 def start(message):
     bot.send_message(message.from_user.id,
                      "Привет, это игра в города напиши название города. Но писать название надо с большой буквы!")
-    with sqlite3.connect("Table.db") as db:
-        c = db.cursor()
-        c.execute("""CREATE TABLE IF NOT EXISTS users_table (
-            ID INTEGER NOT NULL,
-            Username TEXT,
-            Surname_Name TEXT,
-            points INTEGER
-        )""")
-        c.execute(f"INSERT INTO users_table VALUES ({message.from_user.id}, 'Roma', 'Kdcdv', 0)")
-        db.commit()
 
 
 @bot.message_handler(commands=["reset_words"])
@@ -150,4 +139,3 @@ def open_file_w(file_path, data):
 
 
 bot.polling()
-

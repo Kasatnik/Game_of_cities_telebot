@@ -9,7 +9,6 @@ def result(lat, long):
 
     answer = requests.get(numbers)
     data = answer.json()
-    print(11111111, data)
     return data
 
 
